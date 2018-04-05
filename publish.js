@@ -430,10 +430,11 @@ function linktoExternal(longName, name) {
  * @return {string} The HTML for the navigation sidebar.
  */
 function buildNav(members) {
-    var nav = '<h2><a href="index.html">Adsum-react-native-map</a></h2>';
+    var nav = '<h2><a href="index.html">'+ ((env.conf.opts.mainpagetitle) ? env.conf.opts.mainpagetitle : "Home") +'</a></h2>';
     var seen = {};
     var seenTutorials = {};
 
+    nav += '<h3>Versioning</h3><ul><li><a href="CHANGELOG.html">Change log</a></li></ul>';
     nav += buildMemberNav(members.tutorials, 'Tutorials', seenTutorials, linktoTutorial);
     nav += buildMemberNav(members.classes, 'Classes', seen, linkto);
     nav += buildMemberNav(members.modules, 'Modules', {}, linkto);
@@ -666,7 +667,7 @@ exports.publish = function(taffyData, opts, tutorials) {
     var files = find({kind: 'file'});
     var packages = find({kind: 'package'});
 
-    generate('', 'Home',
+    generate('', (opts.mainpagetitle) ? opts.mainpagetitle : 'Home',
         packages.concat(
             [{kind: 'mainpage', readme: opts.readme, longname: (opts.mainpagetitle) ? opts.mainpagetitle : 'Main Page'}]
         ).concat(files),
@@ -720,7 +721,7 @@ exports.publish = function(taffyData, opts, tutorials) {
             content: tutorial.parse(),
             children: tutorial.children
         };
-
+        console.log(filename)
         var tutorialPath = path.join(outdir, filename);
         var html = view.render('tutorial.tmpl', tutorialData);
 
@@ -738,4 +739,29 @@ exports.publish = function(taffyData, opts, tutorials) {
     }
 
     saveChildren(tutorials);
+
+
+    function generateChangeLog(title, tutorial, filename) {
+        var tutorialData = {
+            title: title,
+            header: tutorial.title,
+            content: tutorial.parse(),
+            children: tutorial.children
+        };
+
+        var tutorialPath = path.join(outdir, filename);
+        var html = view.render('changelog.tmpl', tutorialData);
+
+        // yes, you can use {@link} in tutorials too!
+        html = helper.resolveLinks(html); // turn {@link foo} into <a href="foodoc.html">foo</a>
+        fs.writeFileSync(tutorialPath, html, 'utf8');
+    }
+
+    var child = tutorials.children[0];
+    child.longname= 'CHANGELOG';
+    child.name= 'CHANGELOG';
+    child.title= 'Change log';
+    child.content= helper.htmlsafe( fs.readFileSync(path.getResourcePath("CHANGELOG.md"), 'utf8') );
+    generateChangeLog(child.title, child, "CHANGELOG.html");
+
 };
