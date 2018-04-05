@@ -125,6 +125,10 @@ h5{
     transition: background-color .4s ease-out;
 }
 
+.doc-namespace{
+    color: #19dad3;
+}
+
 .readme{
     padding: 0 80px 60px 60px;
 }

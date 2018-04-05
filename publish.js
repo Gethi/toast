@@ -188,7 +188,7 @@ function addAttribs(f) {
 function shortenPaths(files, commonPrefix) {
     Object.keys(files).forEach(function(file) {
         files[file].shortened = files[file].resolved.replace(commonPrefix, '')
-            // always use forward slashes
+        // always use forward slashes
             .replace(/\\/g, '/');
     });
 
@@ -269,8 +269,8 @@ function attachModuleSymbols(doclets, modules) {
     return modules.map(function(module) {
         if (symbols[module.longname]) {
             module.modules = symbols[module.longname]
-                // Only show symbols that have a description. Make an exception for classes, because
-                // we want to show the constructor-signature heading no matter what.
+            // Only show symbols that have a description. Make an exception for classes, because
+            // we want to show the constructor-signature heading no matter what.
                 .filter(function(symbol) {
                     return symbol.description || symbol.kind === 'class';
                 })
@@ -287,8 +287,19 @@ function attachModuleSymbols(doclets, modules) {
     });
 }
 
+function getTag(item, name) {
+    if(!item.tags) return null;
+    var tag = item.tags.filter(
+        function(tag) {
+            return (tag.originalTitle === name)
+        }
+    );
+    return tag.length? tag[0].value : null;
+}
+
 function buildMemberNav(items, itemHeading, itemsSeen, linktoFn) {
     var nav = '';
+    var docNameSpaces = {};
 
     if (items.length) {
         var itemsNav = '';
@@ -297,73 +308,96 @@ function buildMemberNav(items, itemHeading, itemsSeen, linktoFn) {
         var navSubsectionClass = hasSubsectionOption && env.conf.templates.default.nav.subsection.class;
 
         items.forEach(function(item) {
+            var currentItemsNav = '';
             var methods = find({kind:'function', memberof: item.longname});
             var members = find({kind:'member', memberof: item.longname});
             var typedef = find({kind:'typedef', memberof: item.longname});
             var classMember = find({kind:'class', memberof: item.longname});
+            var docNameSpace = getTag(item,"docNameSpace");
+            var keepGroup = false;
+
+            if(docNameSpace) {
+                if(Object.keys(docNameSpaces).indexOf(docNameSpace) === -1) {
+                    docNameSpaces[docNameSpace] = [];
+                }
+                keepGroup = true;
+            }
 
             if( navSubsectionClass && item.kind === 'class' && item.memberof) {
                 return;
             } else if ( !hasOwnProp.call(item, 'longname') ) {
-                itemsNav += '<li>' + linktoFn('', item.name);
-                itemsNav += '</li>';
+                currentItemsNav += '<li>' + linktoFn('', item.name);
+                currentItemsNav += '</li>';
             } else if ( !hasOwnProp.call(itemsSeen, item.longname) ) {
-                itemsNav += '<li>' + linktoFn(item.longname, item.name.replace(/^module:/, ''));
+                currentItemsNav += '<li>' + linktoFn(item.longname, item.name.replace(/^module:/, ''));
 
                 if (methods.length) {
-                    itemsNav += "<ul class='methods'>";
+                    currentItemsNav += "<ul class='methods'>";
 
                     methods.forEach(function (method) {
-                        itemsNav += "<li data-type='method'>";
-                        itemsNav += linkto(method.longname, method.name);
-                        itemsNav += "</li>";
+                        currentItemsNav += "<li data-type='method'>";
+                        currentItemsNav += linkto(method.longname, method.name);
+                        currentItemsNav += "</li>";
                     });
 
-                    itemsNav += "</ul>";
+                    currentItemsNav += "</ul>";
                 }
                 if (members.length) {
-                    itemsNav += "<ul class='members'>";
+                    currentItemsNav += "<ul class='members'>";
 
                     members.forEach(function (member) {
-                        itemsNav += "<li data-type='method'>";
-                        itemsNav += linkto(member.longname, member.name);
-                        itemsNav += "</li>";
+                        currentItemsNav += "<li data-type='method'>";
+                        currentItemsNav += linkto(member.longname, member.name);
+                        currentItemsNav += "</li>";
                     });
 
-                    itemsNav += "</ul>";
+                    currentItemsNav += "</ul>";
                 }
 
                 if (navSubsectionClass && classMember.length) {
-                    itemsNav += "<ul class='classes'>";
+                    currentItemsNav += "<ul class='classes'>";
 
                     classMember.forEach(function (classMember) {
-                        itemsNav += "<li data-type='method'>";
-                        itemsNav += linkto(classMember.longname, classMember.name);
-                        itemsNav += "</li>";
+                        currentItemsNav += "<li data-type='method'>";
+                        currentItemsNav += linkto(classMember.longname, classMember.name);
+                        currentItemsNav += "</li>";
                     });
 
-                    itemsNav += "</ul>";
+                    currentItemsNav += "</ul>";
                 }
 
                 if (navSubsectionTypedef && typedef.length) {
-                    itemsNav += "<ul class='typedefs'>";
+                    currentItemsNav += "<ul class='typedefs'>";
 
                     typedef.forEach(function (typedef) {
-                        itemsNav += "<li data-type='method'>";
-                        itemsNav += linkto(typedef.longname, typedef.name);
-                        itemsNav += "</li>";
+                        currentItemsNav += "<li data-type='method'>";
+                        currentItemsNav += linkto(typedef.longname, typedef.name);
+                        currentItemsNav += "</li>";
                     });
 
-                    itemsNav += "</ul>";
+                    currentItemsNav += "</ul>";
                 }
 
-                itemsNav += '</li>';
+                currentItemsNav += '</li>';
                 itemsSeen[item.longname] = true;
+
+                if(keepGroup) {
+                    docNameSpaces[docNameSpace].push(currentItemsNav)
+                } else {
+                    itemsNav += currentItemsNav;
+                }
             }
         });
 
+        Object.keys(docNameSpaces).map(
+            function (key) {
+                itemsNav += "<li><ul><li class='doc-namespace'>"+key+"</li></ul></li>" + docNameSpaces[key].join("") + "";
+            }
+        );
+
         if (itemsNav !== '') {
-            nav += '<h3>' + itemHeading + '</h3><ul>' + itemsNav + '</ul>';
+            var render = '<h3>' + itemHeading + '</h3><ul>' + itemsNav + '</ul>';
+            nav += render;
         }
     }
 
@@ -429,9 +463,9 @@ function buildNav(members) {
 }
 
 /**
-    @param {TAFFY} taffyData See <http://taffydb.com/>.
-    @param {object} opts
-    @param {Tutorial} tutorials
+ @param {TAFFY} taffyData See <http://taffydb.com/>.
+ @param {object} opts
+ @param {Tutorial} tutorials
  */
 exports.publish = function(taffyData, opts, tutorials) {
     data = taffyData;
@@ -466,7 +500,7 @@ exports.publish = function(taffyData, opts, tutorials) {
     var sourceFiles = {};
     var sourceFilePaths = [];
     data().each(function(doclet) {
-         doclet.attribs = '';
+        doclet.attribs = '';
 
         if (doclet.examples) {
             doclet.examples = doclet.examples.map(function(example) {
@@ -633,7 +667,7 @@ exports.publish = function(taffyData, opts, tutorials) {
         packages.concat(
             [{kind: 'mainpage', readme: opts.readme, longname: (opts.mainpagetitle) ? opts.mainpagetitle : 'Main Page'}]
         ).concat(files),
-    indexUrl);
+        indexUrl);
 
     // set up the lists that we'll use to generate pages
     var classes = taffy(members.classes);
