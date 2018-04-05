@@ -306,6 +306,7 @@ function buildMemberNav(items, itemHeading, itemsSeen, linktoFn) {
         var hasSubsectionOption = env.conf.templates && env.conf.templates.default && env.conf.templates.default.nav.subsection;
         var navSubsectionTypedef = hasSubsectionOption && env.conf.templates.default.nav.subsection.typedef;
         var navSubsectionClass = hasSubsectionOption && env.conf.templates.default.nav.subsection.class;
+        var navSubsectionOrder = env.conf.templates.default.nav.subsection.order;
 
         items.forEach(function(item) {
             var currentItemsNav = '';
@@ -389,9 +390,11 @@ function buildMemberNav(items, itemHeading, itemsSeen, linktoFn) {
             }
         });
 
-        Object.keys(docNameSpaces).map(
+        navSubsectionOrder.map(
             function (key) {
-                itemsNav += "<li><ul><li class='doc-namespace'>"+key+"</li></ul></li>" + docNameSpaces[key].join("") + "";
+                if(docNameSpaces.hasOwnProperty(key)) {
+                    itemsNav += "<li><ul><li class='doc-namespace'>"+key+"</li></ul></li>" + docNameSpaces[key].join("") + "";
+                }
             }
         );
 
