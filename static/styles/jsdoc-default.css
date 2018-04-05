@@ -129,6 +129,10 @@ h5{
     color: #19dad3;
 }
 
+.methods {
+    margin-left: 15px;
+}
+
 .readme{
     padding: 0 80px 60px 60px;
 }
@@ -287,6 +291,7 @@ nav > ul > li > a {
     color: #fff;
     font-weight: 400;
     margin-bottom: 3px;
+    margin-left: 15px;
 }
 
 nav ul ul {
